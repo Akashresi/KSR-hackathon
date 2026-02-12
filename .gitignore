@@ -1,0 +1,43 @@
+# Node
+node_modules/
+dist/
+build/
+.expo/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+ml/training/
+ml/evaluation/
+ml/export/
+ml/models/*/
+!ml/models/*/model.joblib
+!ml/models/*/vectorizer.joblib
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Android
+.gradle/
+local.properties
+*.apk
+*.aar
+*.jks
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
