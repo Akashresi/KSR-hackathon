@@ -1,21 +1,21 @@
 comment_text,insult
-"Hello, how are you today?",0
-Have a safe trip!,0
-Let's work together on this project.,0
-"""""""Your ideas are absolute garbage."""""",insult",1
-I'll see you at the meeting later.,0
-The weather is lovely outside.,0
-"""""""You’re just a failure in everything you do."""""",insult",1
-I hope you have a great day.,0
-"""""""You are completely useless."""""",insult",1
-I really appreciate your help.,0
-"""""""How can someone be so incredibly stupid?"""""",insult",1
-"""""""You’re an embarrassment to everyone here."""""",insult",1
-"""""""You are a pathetic excuse for a human."""""",insult",1
-Can you help me with this task?,0
+You are completely useless.,1
+You have the personality of a brick.,1
+You are genuinely the most annoying person I know.,1
 That's a very nice idea!,0
-"""""""You have the personality of a brick."""""",insult",1
-"""""""You are genuinely the most annoying person I know."""""",insult",1
-"""""""Your presence makes this room worse."""""",insult",1
-"""""""Nobody values your opinion because it's worthless."""""",insult",1
+Have a safe trip!,0
+The weather is lovely outside.,0
+Can you help me with this task?,0
+You’re just a failure in everything you do.,1
+I hope you have a great day.,0
+I really appreciate your help.,0
+I'll see you at the meeting later.,0
 Thank you for your support.,0
+You’re an embarrassment to everyone here.,1
+Nobody values your opinion because it's worthless.,1
+Let's work together on this project.,0
+"Hello, how are you today?",0
+You are a pathetic excuse for a human.,1
+Your presence makes this room worse.,1
+How can someone be so incredibly stupid?,1
+Your ideas are absolute garbage.,1

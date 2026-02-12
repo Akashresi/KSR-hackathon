@@ -1,10 +1,20 @@
-"""You are completely useless.""",insult
-"""Your ideas are absolute garbage.""",insult
-"""You’re an embarrassment to everyone here.""",insult
-"""How can someone be so incredibly stupid?""",insult
-"""You are a pathetic excuse for a human.""",insult
-"""Nobody values your opinion because it's worthless.""",insult
-"""You’re just a failure in everything you do.""",insult
-"""You have the personality of a brick.""",insult
-"""You are genuinely the most annoying person I know.""",insult
-"""Your presence makes this room worse.""",insult
+"I will hurt you",threat
+"I will find you",threat
+"Watch your back",threat
+"You will regret this",threat
+"I will report you",threat
+"I will expose you",threat
+"I will ruin your reputation",threat
+"I will get you in trouble",threat
+"I will make you sorry",threat
+"I will not forget this",threat
+"You better watch your back tonight.",threat
+"I’m going to make sure you regret ever speaking.",threat
+"I know exactly where you live.",threat
+"If I see you again, it won't end well for you.",threat
+"You’re going to pay for what you did.",threat
+"I’ll find you when you're alone.",threat
+"Don't be surprised when your life falls apart tomorrow.",threat
+"I'm coming for you and everything you care about.",threat
+"Keep talking and see what happens to you.",threat
+"I’ll make your life a living nightmare.",threat

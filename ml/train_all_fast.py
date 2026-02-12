@@ -20,7 +20,19 @@ def format_dataset(input_file, output_file, label_col):
         return
 
     with open(input_file, 'r', encoding='utf-8') as f:
-        toxic_phrases = [line.strip() for line in f if line.strip()]
+        raw_lines = [line.strip() for line in f if line.strip()]
+
+    toxic_phrases = []
+    for line in raw_lines:
+        # If line ends with ,bullying or ,threat or ,insult, remove it
+        cleaned = line
+        for suffix in [',bullying', ',threat', ',insult']:
+            if cleaned.lower().endswith(suffix):
+                cleaned = cleaned[:-len(suffix)]
+                break
+        # Remove surrounding quotes if they exist
+        cleaned = cleaned.strip('"').strip("'")
+        toxic_phrases.append(cleaned)
 
     df_toxic = pd.DataFrame({'comment_text': toxic_phrases, label_col: 1})
     df_neutral = pd.DataFrame({'comment_text': neutral_phrases[:len(toxic_phrases)], label_col: 0})

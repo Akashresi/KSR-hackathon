@@ -225,7 +225,7 @@ const App = () => {
       <LinearGradient colors={['#0f172a', '#1e293b']} style={styles.topNav}>
         <View style={styles.brandRow}>
           <Shield color="#6366f1" size={28} />
-          <Text style={styles.brandText}>KSR <Text style={{ color: '#6366f1' }}>CyberSafe</Text></Text>
+          <Text style={styles.brandText}>CyberSafe</Text>
         </View>
       </LinearGradient>
 
