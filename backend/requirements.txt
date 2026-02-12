@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+motor
+pydantic[email]
+python-dotenv
+cryptography
+transformers
+torch
+scikit-learn
+pymongo
+passlib[bcrypt]
+python-jose[cryptography]
+python-multipart
+requests
