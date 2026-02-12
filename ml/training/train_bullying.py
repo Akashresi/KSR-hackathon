@@ -1,5 +1,4 @@
 import os
-import torch
 import pandas as pd
 from torch.utils.data import DataLoader, Dataset
 from transformers import MobileBertTokenizer, MobileBertForSequenceClassification, Trainer, TrainingArguments
