@@ -24,9 +24,13 @@ async def shutdown_db_client():
     await close_mongo_connection()
 
 # Include routers
-app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
-app.include_router(analyze.router, prefix="/api", tags=["Analysis"])
-app.include_router(alert.router, prefix="/api", tags=["Alerts"])
+from app.api.auth import router as auth_router
+from app.api.analyze import router as analyze_router
+from app.api.alert import router as alert_router
+
+app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
+app.include_router(analyze_router, prefix="/api", tags=["Analysis"])
+app.include_router(alert_router, prefix="/api", tags=["Alerts"])
 
 @app.get("/")
 async def root():

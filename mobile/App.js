@@ -8,7 +8,6 @@ import {
   SafeAreaView,
   StatusBar,
   TextInput,
-  Switch,
   Dimensions,
   Alert,
   ActivityIndicator
@@ -16,118 +15,341 @@ import {
 import {
   Shield,
   Activity,
-  AlertTriangle,
-  Settings as SettingsIcon,
-  Bell,
   Lock,
   Unlock,
   User,
   LogOut,
-  ChevronRight,
-  ShieldAlert,
-  ArrowLeft,
+  Bell,
+  Settings as SettingsIcon,
   Mail,
-  Smartphone,
-  Info,
-  CheckCircle2,
-  PlusCircle
+  ArrowLeft,
+  Info
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle, G } from 'react-native-svg';
 
 const { width } = Dimensions.get('window');
 
-// API Config
-const API_IP = '10.1.5.135';
+// API Config (Update this to your PC's actual IP address shown in ipconfig)
+const API_IP = '192.168.137.1';
 const BACKEND_URL = `http://${API_IP}:8000`;
 
+// --- SUB-COMPONENTS (Defined outside to prevent input focus loss) ---
+
+const SafetyChart = ({ score }) => {
+  const size = 160;
+  const strokeWidth = 14;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const strokeDashoffset = circumference - (score / 100) * circumference;
+  const color = score > 70 ? '#10b981' : score > 30 ? '#f59e0b' : '#ef4444';
+
+  return (
+    <View style={styles.chartContainer}>
+      <Svg width={size} height={size}>
+        <G rotation="-90" origin={`${size / 2}, ${size / 2}`}>
+          <Circle cx={size / 2} cy={size / 2} r={radius} stroke="rgba(255,255,255,0.05)" strokeWidth={strokeWidth} fill="transparent" />
+          <Circle cx={size / 2} cy={size / 2} r={radius} stroke={color} strokeWidth={strokeWidth}
+            strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} strokeLinecap="round" fill="transparent" />
+        </G>
+      </Svg>
+      <View style={styles.chartTextContainer}>
+        <Text style={[styles.chartScoreText, { color }]}>{score}%</Text>
+        <Text style={styles.chartSubText}>Safety</Text>
+      </View>
+    </View>
+  );
+};
+
+const LoginView = ({ email, setEmail, password, setPassword, handleLogin, loading, setCurrentView }) => (
+  <LinearGradient colors={['#0f172a', '#1e293b']} style={styles.fullScreen}>
+    <View style={styles.authCard}>
+      <Shield color="#6366f1" size={60} style={{ marginBottom: 20 }} />
+      <Text style={styles.authTitle}>CyberSafe Login</Text>
+
+      <View style={styles.inputGroup}>
+        <Mail color="#64748b" size={20} />
+        <TextInput
+          style={styles.input}
+          placeholder="Email Address"
+          placeholderTextColor="#64748b"
+          keyboardType="email-address"
+          autoCapitalize="none"
+          value={email}
+          onChangeText={setEmail}
+        />
+      </View>
+
+      <View style={styles.inputGroup}>
+        <Lock color="#64748b" size={20} />
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          placeholderTextColor="#64748b"
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+        />
+      </View>
+
+      <TouchableOpacity style={styles.submitBtn} onPress={handleLogin} disabled={loading}>
+        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitBtnText}>Sign In</Text>}
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={() => setCurrentView('register')}>
+        <Text style={styles.authLink}>New to CyberSafe? <Text style={{ color: '#6366f1' }}>Register</Text></Text>
+      </TouchableOpacity>
+    </View>
+  </LinearGradient>
+);
+
+const RegisterView = ({ role, setRole, name, setName, email, setEmail, password, setPassword, parentEmail, setParentEmail, handleRegister, loading, setCurrentView }) => (
+  <LinearGradient colors={['#0f172a', '#1e293b']} style={styles.fullScreen}>
+    <ScrollView contentContainerStyle={{ justifyContent: 'center', alignItems: 'center', paddingVertical: 50 }}>
+      <View style={styles.authCard}>
+        <TouchableOpacity onPress={() => setCurrentView('login')} style={styles.backBtn}>
+          <ArrowLeft color="#64748b" size={20} />
+        </TouchableOpacity>
+
+        <Text style={styles.authTitle}>Create Account</Text>
+
+        <View style={styles.roleSelector}>
+          <TouchableOpacity style={[styles.roleOption, role === 'parent' && styles.roleActive]} onPress={() => setRole('parent')}>
+            <Text style={[styles.roleText, role === 'parent' && styles.roleTextActive]}>Parent</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.roleOption, role === 'student' && styles.roleActive]} onPress={() => setRole('student')}>
+            <Text style={[styles.roleText, role === 'student' && styles.roleTextActive]}>Student</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.inputGroup}>
+          <User color="#64748b" size={20} />
+          <TextInput style={styles.input} placeholder="Full Name" placeholderTextColor="#64748b" value={name} onChangeText={setName} />
+        </View>
+
+        <View style={styles.inputGroup}>
+          <Mail color="#64748b" size={20} />
+          <TextInput style={styles.input} placeholder="Email" placeholderTextColor="#64748b" keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={setEmail} />
+        </View>
+
+        <View style={styles.inputGroup}>
+          <Lock color="#64748b" size={20} />
+          <TextInput style={styles.input} placeholder="Password" placeholderTextColor="#64748b" secureTextEntry value={password} onChangeText={setPassword} />
+        </View>
+
+        {role === 'student' && (
+          <View style={styles.inputGroupHighlight}>
+            <Mail color="#6366f1" size={20} />
+            <TextInput style={styles.input} placeholder="Parent's Email" placeholderTextColor="#64748b" keyboardType="email-address" autoCapitalize="none" value={parentEmail} onChangeText={setParentEmail} />
+          </View>
+        )}
+
+        <TouchableOpacity style={styles.submitBtn} onPress={handleRegister} disabled={loading}>
+          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitBtnText}>Complete Registration</Text>}
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
+  </LinearGradient>
+);
+
+const DashboardContent = ({ user, studentData, handleUnlock, activeTab }) => {
+  if (user.role === 'student' && studentData?.app_blocked) {
+    return (
+      <View style={styles.lockScreen}>
+        <Lock size={100} color="#ef4444" />
+        <Text style={styles.lockTitle}>Access Restricted</Text>
+        <Text style={styles.lockMessage}>Your parent has temporarily blocked this application for your safety.</Text>
+        <TouchableOpacity style={styles.emergencyBtn}><Text style={styles.emergencyText}>Emergency Call</Text></TouchableOpacity>
+      </View>
+    );
+  }
+
+  // Alerts History Tab
+  if (activeTab === 'history') {
+    return (
+      <ScrollView style={styles.content}>
+        <Text style={styles.sectionTitle}>{user.role === 'parent' ? "Critical Risk History" : "Safety Log"}</Text>
+        {user.role === 'parent' ? (
+          studentData?.alerts?.length > 0 ? (
+            studentData.alerts.map((alert, i) => (
+              <View key={i} style={styles.alertCard}>
+                <View style={styles.alertHeader}>
+                  <Text style={styles.alertApp}>{alert.app}</Text>
+                  <View style={[styles.sevBadge, { backgroundColor: alert.severity === 'High' ? 'rgba(239,68,68,0.2)' : 'rgba(245,158,11,0.2)' }]}>
+                    <Text style={styles.sevText}>{alert.severity}</Text>
+                  </View>
+                </View>
+                <Text style={styles.alertTime}>{new Date(alert.timestamp).toLocaleString()}</Text>
+              </View>
+            ))
+          ) : <Text style={{ color: '#64748b', textAlign: 'center', marginTop: 30 }}>No critical alerts detected.</Text>
+        ) : (
+          <View style={styles.tipCard}>
+            <Info color="#6366f1" size={24} />
+            <Text style={styles.tipText}>Only critical threats are recorded here for your guardian to review.</Text>
+          </View>
+        )}
+      </ScrollView>
+    );
+  }
+
+  // Settings / Setup Tab
+  if (activeTab === 'settings') {
+    return (
+      <ScrollView style={styles.content}>
+        <Text style={styles.sectionTitle}>Shield Settings</Text>
+        <View style={styles.glassCard}>
+          <View style={{ width: '100%', paddingVertical: 10 }}>
+            <Text style={{ color: '#fff', fontWeight: 'bold' }}>AI Engine Status</Text>
+            <Text style={{ color: '#10b981', fontSize: 12 }}>Active & Scanning</Text>
+          </View>
+          <View style={{ width: '100%', height: 1, backgroundColor: 'rgba(255,255,255,0.05)', marginVertical: 10 }} />
+          <View style={{ width: '100%', paddingVertical: 10 }}>
+            <Text style={{ color: '#fff', fontWeight: 'bold' }}>Social App Monitoring</Text>
+            <Text style={{ color: '#64748b', fontSize: 12 }}>WhatsApp, Telegram, Messenger</Text>
+          </View>
+        </View>
+        <Text style={{ color: '#64748b', fontSize: 12, textAlign: 'center', marginTop: 20 }}>
+          Version 1.0.0 (Hackathon Build)
+        </Text>
+      </ScrollView>
+    );
+  }
+
+  // Main Dashboard Tab
+  return (
+    <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <View style={styles.glassCard}>
+        <SafetyChart score={studentData?.safety_percentage || 100} />
+        <Text style={{ color: '#94a3b8', marginTop: 15 }}>
+          {user.role === 'parent' ? `Monitoring Child ID: ${studentData?.student_id || '...'}` : "Shield Active on WhatsApp & Telegram"}
+        </Text>
+
+        {user.role === 'parent' && studentData?.app_blocked && (
+          <TouchableOpacity style={styles.unlockBtn} onPress={handleUnlock}>
+            <Unlock color="#fff" size={20} />
+            <Text style={styles.unlockBtnText}>Unlock Student Device</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      <Text style={styles.sectionTitle}>Quick Status</Text>
+      <View style={styles.tipCard}>
+        <Shield color="#6366f1" size={24} />
+        <View style={{ marginLeft: 15, flex: 1 }}>
+          <Text style={{ color: '#fff', fontWeight: 'bold' }}>{user.role === 'parent' ? "Connection Active" : "Protection Running"}</Text>
+          <Text style={styles.tipText}>
+            {user.role === 'parent' ? "Receiving real-time safety updates." : "Messages are being scanned by on-device AI."}
+          </Text>
+        </View>
+      </View>
+    </ScrollView>
+  );
+};
+
+const MainView = ({ user, studentData, activeTab, setActiveTab, setCurrentView, handleUnlock }) => (
+  <SafeAreaView style={styles.container}>
+    <View style={styles.topNav}>
+      <View style={styles.brandRow}>
+        <Shield color="#6366f1" size={28} />
+        <View>
+          <Text style={styles.brandText}>CyberSafe</Text>
+          <Text style={{ color: '#6366f1', fontSize: 10, marginLeft: 10, fontWeight: 'bold' }}>{user.role.toUpperCase()}</Text>
+        </View>
+      </View>
+      <TouchableOpacity onPress={() => { setCurrentView('login'); setUser(null); }}><LogOut color="#64748b" size={22} /></TouchableOpacity>
+    </View>
+
+    <DashboardContent user={user} studentData={studentData} handleUnlock={handleUnlock} activeTab={activeTab} />
+
+    <View style={styles.bottomNav}>
+      <TouchableOpacity style={styles.navItem} onPress={() => setActiveTab('dashboard')}>
+        <Activity color={activeTab === 'dashboard' ? '#6366f1' : '#64748b'} size={24} />
+        <Text style={[styles.navLabel, activeTab === 'dashboard' && styles.activeNavLabel]}>Safety</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.navItem} onPress={() => setActiveTab('history')}>
+        <Bell color={activeTab === 'history' ? '#6366f1' : '#64748b'} size={24} />
+        <Text style={[styles.navLabel, activeTab === 'history' && styles.activeNavLabel]}>Alerts</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.navItem} onPress={() => setActiveTab('settings')}>
+        <SettingsIcon color={activeTab === 'settings' ? '#6366f1' : '#64748b'} size={24} />
+        <Text style={[styles.navLabel, activeTab === 'settings' && styles.activeNavLabel]}>Setup</Text>
+      </TouchableOpacity>
+    </View>
+  </SafeAreaView>
+);
+
+// --- MAIN APP COMPONENT ---
+
 const App = () => {
-  // Navigation & Auth State
-  const [currentView, setCurrentView] = useState('login'); // login, register, main
+  const [currentView, setCurrentView] = useState('login');
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
-
-  // Form State
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
   const [role, setRole] = useState('parent');
   const [parentEmail, setParentEmail] = useState('');
-
-  // Data State
   const [studentData, setStudentData] = useState(null);
   const [activeTab, setActiveTab] = useState('dashboard');
 
-  // --- API CALLS ---
-
   const handleRegister = async () => {
     setLoading(true);
+    console.log("Attempting registration for:", email);
     try {
-      const payload = {
-        name,
-        email,
-        phone,
-        password,
-        role,
-        parent_email: role === 'student' ? parentEmail : null
-      };
-
+      const payload = { name, email, phone: '000', password, role, parent_email: role === 'student' ? parentEmail : null };
       const res = await fetch(`${BACKEND_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-
-      const data = await res.json();
       if (res.ok) {
         Alert.alert("Success", "Account created! Please login.");
         setCurrentView('login');
       } else {
+        const data = await res.json();
+        console.log("Registration Error Detail:", data);
         Alert.alert("Error", data.detail || "Registration failed");
       }
     } catch (e) {
-      Alert.alert("Error", "Server unreachable");
-    } finally {
-      setLoading(false);
+      console.error("Network Error during registration:", e);
+      Alert.alert("Error", "Server unreachable. Check your Wi-Fi and API_IP.");
     }
+    finally { setLoading(false); }
   };
 
   const handleLogin = async () => {
     setLoading(true);
+    console.log("Attempting login for:", email);
     try {
       const res = await fetch(`${BACKEND_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
-
       const data = await res.json();
       if (res.ok) {
+        console.log("Login successful:", data.name);
         setUser(data);
         setCurrentView('main');
-      } else {
+      }
+      else {
+        console.log("Login failed:", data);
         Alert.alert("Error", data.detail || "Invalid credentials");
       }
     } catch (e) {
+      console.error("Network Error during login:", e);
       Alert.alert("Error", "Server unreachable");
-    } finally {
-      setLoading(false);
     }
+    finally { setLoading(false); }
   };
 
   const syncData = async () => {
     if (!user) return;
     try {
-      const id = user.role === 'parent' ? user.user_id : user.user_id;
       const res = await fetch(`${BACKEND_URL}/api/parent/dashboard/${user.user_id}`);
-      if (res.ok) {
-        const data = await res.json();
-        setStudentData(data);
-      }
-    } catch (e) {
-      console.log("Sync failed");
-    }
+      if (res.ok) { setStudentData(await res.json()); }
+    } catch (e) { console.log("Sync failed"); }
   };
 
   useEffect(() => {
@@ -140,220 +362,17 @@ const App = () => {
 
   const handleUnlock = async () => {
     try {
-      const res = await fetch(`${BACKEND_URL}/api/parent/unlock-student?student_id=${studentData.student_id}`, {
-        method: 'POST'
-      });
-      if (res.ok) {
-        Alert.alert("Success", "Student accessibility restored.");
-        syncData();
-      }
-    } catch (e) {
-      Alert.alert("Error", "Unlock failed");
-    }
+      const res = await fetch(`${BACKEND_URL}/api/parent/unlock-student?student_id=${studentData.student_id}`, { method: 'POST' });
+      if (res.ok) { Alert.alert("Success", "Unlocked!"); syncData(); }
+    } catch (e) { Alert.alert("Error", "Unlock failed"); }
   };
-
-  // --- UI COMPONENTS ---
-
-  const SafetyChart = ({ score }) => {
-    const size = 160;
-    const strokeWidth = 14;
-    const radius = (size - strokeWidth) / 2;
-    const circumference = radius * 2 * Math.PI;
-    const strokeDashoffset = circumference - (score / 100) * circumference;
-    const color = score > 70 ? '#10b981' : score > 30 ? '#f59e0b' : '#ef4444';
-
-    return (
-      <View style={styles.chartContainer}>
-        <Svg width={size} height={size}>
-          <G rotation="-90" origin={`${size / 2}, ${size / 2}`}>
-            <Circle cx={size / 2} cy={size / 2} r={radius} stroke="rgba(255,255,255,0.05)" strokeWidth={strokeWidth} fill="transparent" />
-            <Circle cx={size / 2} cy={size / 2} r={radius} stroke={color} strokeWidth={strokeWidth}
-              strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} strokeLinecap="round" fill="transparent" />
-          </G>
-        </Svg>
-        <View style={styles.chartTextContainer}>
-          <Text style={[styles.chartScoreText, { color }]}>{score}%</Text>
-          <Text style={styles.chartSubText}>Safety</Text>
-        </View>
-      </View>
-    );
-  };
-
-  // --- VIEWS ---
-
-  const LoginView = () => (
-    <LinearGradient colors={['#0f172a', '#1e293b']} style={styles.fullScreen}>
-      <View style={styles.authCard}>
-        <Shield color="#6366f1" size={60} style={{ marginBottom: 20 }} />
-        <Text style={styles.authTitle}>CyberSafe Login</Text>
-
-        <View style={styles.inputGroup}>
-          <Mail color="#64748b" size={20} />
-          <TextInput
-            style={styles.input}
-            placeholder="Email Address"
-            placeholderTextColor="#64748b"
-            value={email}
-            onChangeText={setEmail}
-          />
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Lock color="#64748b" size={20} />
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            placeholderTextColor="#64748b"
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-          />
-        </View>
-
-        <TouchableOpacity style={styles.submitBtn} onPress={handleLogin} disabled={loading}>
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitBtnText}>Sign In</Text>}
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={() => setCurrentView('register')}>
-          <Text style={styles.authLink}>New to CyberSafe? <Text style={{ color: '#6366f1' }}>Register</Text></Text>
-        </TouchableOpacity>
-      </View>
-    </LinearGradient>
-  );
-
-  const RegisterView = () => (
-    <LinearGradient colors={['#0f172a', '#1e293b']} style={styles.fullScreen}>
-      <ScrollView contentContainerStyle={{ justifyContent: 'center', alignItems: 'center', paddingVertical: 50 }}>
-        <View style={styles.authCard}>
-          <TouchableOpacity onPress={() => setCurrentView('login')} style={styles.backBtn}>
-            <ArrowLeft color="#64748b" size={20} />
-          </TouchableOpacity>
-
-          <Text style={styles.authTitle}>Create Account</Text>
-
-          <View style={styles.roleSelector}>
-            <TouchableOpacity style={[styles.roleOption, role === 'parent' && styles.roleActive]} onPress={() => setRole('parent')}>
-              <Text style={[styles.roleText, role === 'parent' && styles.roleTextActive]}>Parent</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.roleOption, role === 'student' && styles.roleActive]} onPress={() => setRole('student')}>
-              <Text style={[styles.roleText, role === 'student' && styles.roleTextActive]}>Student</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.inputGroup}>
-            <User color="#64748b" size={20} />
-            <TextInput style={styles.input} placeholder="Full Name" placeholderTextColor="#64748b" value={name} onChangeText={setName} />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Mail color="#64748b" size={20} />
-            <TextInput style={styles.input} placeholder="Email" placeholderTextColor="#64748b" value={email} onChangeText={setEmail} />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Lock color="#64748b" size={20} />
-            <TextInput style={styles.input} placeholder="Password" placeholderTextColor="#64748b" secureTextEntry value={password} onChangeText={setPassword} />
-          </View>
-
-          {role === 'student' && (
-            <View style={styles.inputGroupHighlight}>
-              <Mail color="#6366f1" size={20} />
-              <TextInput style={styles.input} placeholder="Parent's Email" placeholderTextColor="#64748b" value={parentEmail} onChangeText={setParentEmail} />
-            </View>
-          )}
-
-          <TouchableOpacity style={styles.submitBtn} onPress={handleRegister} disabled={loading}>
-            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitBtnText}>Complete Registration</Text>}
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </LinearGradient>
-  );
-
-  const DashboardContent = () => {
-    if (user.role === 'student' && studentData?.app_blocked) {
-      return (
-        <View style={styles.lockScreen}>
-          <Lock size={100} color="#ef4444" />
-          <Text style={styles.lockTitle}>Access Restricted</Text>
-          <Text style={styles.lockMessage}>Your parent has temporarily blocked this application for your safety.</Text>
-          <TouchableOpacity style={styles.emergencyBtn}><Text style={styles.emergencyText}>Emergency Call</Text></TouchableOpacity>
-        </View>
-      );
-    }
-
-    return (
-      <ScrollView style={styles.content}>
-        <View style={styles.glassCard}>
-          <SafetyChart score={studentData?.safety_percentage || 100} />
-          <Text style={{ color: '#94a3b8', marginTop: 15 }}>
-            {user.role === 'parent' ? "Monitoring Student: student_akash" : "Shield Active on WhatsApp & Telegram"}
-          </Text>
-
-          {user.role === 'parent' && studentData?.app_blocked && (
-            <TouchableOpacity style={styles.unlockBtn} onPress={handleUnlock}>
-              <Unlock color="#fff" size={20} />
-              <Text style={styles.unlockBtnText}>Unlock Student Device</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        <Text style={styles.sectionTitle}>{user.role === 'parent' ? "Critical Risk History" : "Safety Tips"}</Text>
-
-        {user.role === 'parent' ? (
-          studentData?.alerts?.map((alert, i) => (
-            <View key={i} style={styles.alertCard}>
-              <View style={styles.alertHeader}>
-                <Text style={styles.alertApp}>{alert.app}</Text>
-                <View style={[styles.sevBadge, { backgroundColor: alert.severity === 'High' ? 'rgba(239,68,68,0.2)' : 'rgba(245,158,11,0.2)' }]}>
-                  <Text style={styles.sevText}>{alert.severity}</Text>
-                </View>
-              </View>
-              <Text style={styles.alertTime}>{new Date(alert.timestamp).toLocaleString()}</Text>
-            </View>
-          ))
-        ) : (
-          <View style={styles.tipCard}><Info color="#6366f1" size={24} /><Text style={styles.tipText}>If someone makes you uncomfortable, tell a trusted adult immediately.</Text></View>
-        )}
-      </ScrollView>
-    );
-  };
-
-  const MainView = () => (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.topNav}>
-        <View style={styles.brandRow}>
-          <Shield color="#6366f1" size={28} />
-          <Text style={styles.brandText}>CyberSafe</Text>
-        </View>
-        <TouchableOpacity onPress={() => setCurrentView('login')}><LogOut color="#64748b" size={22} /></TouchableOpacity>
-      </View>
-
-      <DashboardContent />
-
-      <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem} onPress={() => setActiveTab('dashboard')}>
-          <Activity color={activeTab === 'dashboard' ? '#6366f1' : '#64748b'} size={24} />
-          <Text style={[styles.navLabel, activeTab === 'dashboard' && styles.activeNavLabel]}>Safety</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => setActiveTab('history')}>
-          <Bell color={activeTab === 'history' ? '#6366f1' : '#64748b'} size={24} />
-          <Text style={[styles.navLabel, activeTab === 'history' && styles.activeNavLabel]}>Alerts</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => setActiveTab('settings')}>
-          <SettingsIcon color={activeTab === 'settings' ? '#6366f1' : '#64748b'} size={24} />
-          <Text style={[styles.navLabel, activeTab === 'settings' && styles.activeNavLabel]}>Setup</Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
-  );
 
   return (
     <>
       <StatusBar barStyle="light-content" />
-      {currentView === 'login' && <LoginView />}
-      {currentView === 'register' && <RegisterView />}
-      {currentView === 'main' && <MainView />}
+      {currentView === 'login' && <LoginView email={email} setEmail={setEmail} password={password} setPassword={setPassword} handleLogin={handleLogin} loading={loading} setCurrentView={setCurrentView} />}
+      {currentView === 'register' && <RegisterView role={role} setRole={setRole} name={name} setName={setName} email={email} setEmail={setEmail} password={password} setPassword={setPassword} parentEmail={parentEmail} setParentEmail={setParentEmail} handleRegister={handleRegister} loading={loading} setCurrentView={setCurrentView} />}
+      {currentView === 'main' && user && <MainView user={user} studentData={studentData} activeTab={activeTab} setActiveTab={setActiveTab} setCurrentView={setCurrentView} handleUnlock={handleUnlock} />}
     </>
   );
 };

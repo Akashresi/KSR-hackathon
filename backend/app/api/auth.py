@@ -23,13 +23,15 @@ class UserLogin(BaseModel):
 
 @router.post("/register")
 async def register(user: UserRegister, db = Depends(get_database)):
+    print(f"DEBUG: Registering user {user.email} with password length {len(user.password)}")
     # 1. Check if user already exists
     existing_user = await db.users.find_one({"email": user.email})
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
 
     # 2. Hash password
-    hashed_password = pwd_context.hash(user.password)
+    from passlib.hash import pbkdf2_sha256
+    hashed_password = pbkdf2_sha256.hash(user.password)
     
     user_id = str(uuid.uuid4())
     user_data = {
@@ -67,7 +69,8 @@ async def login(user: UserLogin, db = Depends(get_database)):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
     # 2. Verify password
-    if not pwd_context.verify(user.password, db_user["password"]):
+    from passlib.hash import pbkdf2_sha256
+    if not pbkdf2_sha256.verify(user.password, db_user["password"]):
         raise HTTPException(status_code=401, detail="Invalid email or password")
     
     return {
