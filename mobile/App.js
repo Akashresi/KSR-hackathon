@@ -40,12 +40,8 @@ const App = () => {
   const [isProtected, setIsProtected] = useState(true);
   const [safetyScore, setSafetyScore] = useState(100);
 
-  // Demo Data
-  const [alerts, setAlerts] = useState([
-    { id: 1, app: 'WhatsApp', severity: 'High', time: '10:30 AM', type: 'Persistent' },
-    { id: 2, app: 'Telegram', severity: 'Medium', time: 'Yesterday', type: 'Language' },
-    { id: 3, app: 'WhatsApp', severity: 'Low', time: '2 days ago', type: 'System' },
-  ]);
+  // State for live alerts
+  const [alerts, setAlerts] = useState([]);
 
   const [profile, setProfile] = useState({
     name: 'Akash Resi',
@@ -53,7 +49,25 @@ const App = () => {
     contact: '+91 98765 43210'
   });
 
-  // Calculate safety score logic
+  // Fetch live alerts from the backend
+  const fetchAlerts = async () => {
+    try {
+      const response = await fetch(`${API_URL}/alerts/demo_user`);
+      const data = await response.json();
+      setAlerts(data);
+    } catch (error) {
+      console.error("Failed to fetch alerts:", error);
+    }
+  };
+
+  // Poll for new alerts every 3 seconds for real-time feel
+  useEffect(() => {
+    fetchAlerts();
+    const interval = setInterval(fetchAlerts, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Calculate safety score logic based on live data
   useEffect(() => {
     let score = 100;
     alerts.forEach(a => {
@@ -112,8 +126,6 @@ const App = () => {
     );
   };
 
-  // --- SCREENS ---
-
   const DashboardScreen = () => (
     <ScrollView style={styles.screenContent} showsVerticalScrollIndicator={false}>
       <View style={styles.headerRow}>
@@ -156,16 +168,16 @@ const App = () => {
   const NotificationsScreen = () => (
     <ScrollView style={styles.screenContent} showsVerticalScrollIndicator={false}>
       <Text style={styles.screenTitle}>Risk History</Text>
-      {alerts.map(alert => (
-        <View key={alert.id} style={styles.alertCard}>
+      {alerts.map((alert, index) => (
+        <View key={alert._id || index} style={styles.alertCard}>
           <View style={styles.alertHeader}>
-            <Text style={styles.alertApp}>{alert.app} Detected</Text>
+            <Text style={styles.alertApp}>{alert.app || 'Unknown App'} Detected</Text>
             <View style={[styles.severityBadge, styles[`severity${alert.severity}`]]}>
               <Text style={styles.severityText}>{alert.severity} Risk</Text>
             </View>
           </View>
-          <Text style={styles.alertDesc}>{alert.type} cyberbullying behavior detected.</Text>
-          <Text style={styles.alertTime}>{alert.time}</Text>
+          <Text style={styles.alertDesc}>detected cyberbullying markers in conversation.</Text>
+          <Text style={styles.alertTime}>{new Date(alert.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
         </View>
       ))}
       <Text style={styles.privacyNote}>* No actual message content is ever stored.</Text>
