@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import analyze, alert
+from app.api import analyze, alert, auth
 from app.database.mongodb import connect_to_mongo, close_mongo_connection
 from app.config import settings
 
@@ -24,6 +24,7 @@ async def shutdown_db_client():
     await close_mongo_connection()
 
 # Include routers
+app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 app.include_router(analyze.router, prefix="/api", tags=["Analysis"])
 app.include_router(alert.router, prefix="/api", tags=["Alerts"])
 
