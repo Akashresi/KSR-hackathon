@@ -6,7 +6,7 @@ from app.config import settings
 
 app = FastAPI(title=settings.PROJECT_NAME)
 
-# CORS configuration for React frontend
+# CORS configuration for mobile and web clients
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], # In production, restrict this
@@ -29,4 +29,4 @@ app.include_router(alert.router, prefix="/api", tags=["Alerts"])
 
 @app.get("/")
 async def root():
-    return {"message": "Cyberbullying Detection API is running"}
+    return {"message": "CyberSafe Mobile Protection API is running"}

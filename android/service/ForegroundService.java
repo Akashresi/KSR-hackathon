@@ -8,91 +8,55 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.IBinder;
 import androidx.core.app.NotificationCompat;
-import org.tensorflow.lite.Interpreter;
-import java.nio.MappedByteBuffer;
-import java.io.FileInputStream;
-import java.nio.channels.FileChannel;
-import android.content.res.AssetFileDescriptor;
 
+/**
+ * Ensures the CyberSafe protection service stays active.
+ * Shows a persistent notification as required by Android for foreground tasks.
+ */
 public class ForegroundService extends Service {
-    private static final String CHANNEL_ID = "CyberbullyingDetectionServiceChannel";
-    private Interpreter insultModel;
-    private Interpreter threatModel;
+    private static final String CHANNEL_ID = "CyberSafeProtectionChannel";
+    private static final int NOTIFICATION_ID = 1001;
 
     @Override
     public void onCreate() {
         super.onCreate();
-        loadModels();
-    }
-
-    private void loadModels() {
-        try {
-            insultModel = new Interpreter(loadModelFile("insult_model.tflite"));
-            threatModel = new Interpreter(loadModelFile("threat_model.tflite"));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    private MappedByteBuffer loadModelFile(String modelName) throws Exception {
-        AssetFileDescriptor fileDescriptor = getAssets().openFd(modelName);
-        FileInputStream inputStream = new FileInputStream(fileDescriptor.getFileDescriptor());
-        FileChannel fileChannel = inputStream.getChannel();
-        long startOffset = fileDescriptor.getStartOffset();
-        long declaredLength = fileDescriptor.getDeclaredLength();
-        return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
+        createNotificationChannel();
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (intent != null && "ANALYZE_TEXT".equals(intent.getAction())) {
-            String text = intent.getStringExtra("content");
-            analyzeOnDevice(text);
-        }
-
-        createNotificationChannel();
+        // Build the persistent monitoring notification
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("Cyberbullying Protection")
-                .setContentText("Monitoring for your safety...")
+                .setContentTitle("CyberSafe Protection Active")
+                .setContentText("Real-time monitoring is enabled for your safety.")
                 .setSmallIcon(android.R.drawable.ic_lock_lock)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setOngoing(true) // Cannot be swiped away
                 .build();
 
-        startForeground(1, notification);
-        return START_STICKY;
-    }
+        // Start in foreground to prevent the system from killing the service
+        startForeground(NOTIFICATION_ID, notification);
 
-    private void analyzeOnDevice(String text) {
-        // 1. Tokenize (Simple implementation for demo)
-        // 2. Run Inference
-        float[][] insultOutput = new float[1][2];
-        float[][] threatOutput = new float[1][2];
-        
-        // insultModel.run(input, insultOutput);
-        // threatModel.run(input, threatOutput);
-        
-        // 3. Immediately delete text (not stored)
-        // 4. Send metadata to backend
-        sendMetadataToBackend(0.1f, 0.05f, 0.0f); 
-    }
-
-    private void sendMetadataToBackend(float insult, float threat, float bullying) {
-        // Async HTTP call to Backend /api/analyze
+        return START_STICKY; // Restart automatically if killed
     }
 
     @Override
     public IBinder onBind(Intent intent) {
-        return null;
+        return null; // No binding needed
     }
 
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel serviceChannel = new NotificationChannel(
                     CHANNEL_ID,
-                    "Cyberbullying Detection Service Channel",
-                    NotificationManager.IMPORTANCE_DEFAULT
+                    "CyberSafe Protection Service",
+                    NotificationManager.IMPORTANCE_LOW
             );
+            serviceChannel.setDescription("Notification for CyberSafe background protection");
             NotificationManager manager = getSystemService(NotificationManager.class);
-            manager.createNotificationChannel(serviceChannel);
+            if (manager != null) {
+                manager.createNotificationChannel(serviceChannel);
+            }
         }
     }
 }
