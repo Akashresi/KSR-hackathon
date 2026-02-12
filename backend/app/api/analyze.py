@@ -1,13 +1,13 @@
-from fastapi import APIRouter, Depends, BackgroundTasks
+from fastapi import APIRouter, Depends, BackgroundTasks, HTTPException
 from pydantic import BaseModel
 from app.database.mongodb import get_database
-from app.services.severity_engine import calculate_severity, should_alert
+from app.services.severity_engine import calculate_severity
 from app.services.alert_manager import send_alert_to_contact
 import datetime
+from bson import ObjectId
 
 router = APIRouter()
 
-# Schema optimized for real-time: NO text payload
 class RealTimeAnalysisRequest(BaseModel):
     user_id: str
     app_name: str
@@ -21,24 +21,25 @@ async def analyze_realtime(
     background_tasks: BackgroundTasks,
     db = Depends(get_database)
 ):
-    """
-    Ultra-low latency analyze endpoint.
-    Calculates severity instantly and returns to the mobile device.
-    Alert logic is offloaded to background tasks.
-    """
-    
-    # 1. Instant severity calculation
+    # 1. Calculate severity and deduction
     severity = calculate_severity(
         request.insult_score, 
         request.threat_score, 
         request.bullying_score
     )
     
-    # 2. Add DB storage and Alerting to BackgroundTasks to respond to user instantly
+    deduction = 0
+    if severity == "High":
+        deduction = 50
+    elif severity == "Medium":
+        deduction = 5
+    
+    # 2. Add DB storage and state update to BackgroundTasks
     background_tasks.add_task(
-        process_post_inference_logic, 
+        update_student_safety_state, 
         request, 
         severity, 
+        deduction,
         db
     )
     
@@ -47,32 +48,78 @@ async def analyze_realtime(
         "action": "logged" if severity != "Low" else "none"
     }
 
-async def process_post_inference_logic(request, severity, db):
-    # Log the interaction for the dashboard
-    metadata_entry = {
+async def update_student_safety_state(request, severity, deduction, db):
+    # Update student safety percentage and potentially block app
+    student = await db.users.find_one({"user_id": request.user_id})
+    if not student:
+        return
+
+    current_safety = student.get("safety_percentage", 100)
+    new_safety = max(0, current_safety - deduction)
+    
+    update_data = {"safety_percentage": new_safety}
+    
+    # If safety hits 0 and was previously above 0, notify parent
+    was_blocked = student.get("app_blocked", False)
+    is_now_blocked = new_safety <= 0
+    
+    if is_now_blocked:
+        update_data["app_blocked"] = True
+        
+        # Notify parent ONLY when it first hits 0
+        if not was_blocked:
+            parent = await db.users.find_one({"user_id": student.get("parent_id")})
+            if parent and parent.get("email"):
+                await send_alert_to_contact(
+                    parent["email"], 
+                    "CRITICAL", 
+                    f"Student {student['user_id']} safety reached 0%. App has been blocked."
+                )
+
+    await db.users.update_one({"user_id": request.user_id}, {"$set": update_data})
+
+    # Log the interaction for historical records
+    await db.alerts.insert_one({
         "user_id": request.user_id,
         "app": request.app_name,
-        "scores": {
-            "insult": request.insult_score,
-            "threat": request.threat_score,
-            "bullying": request.bullying_score
-        },
         "severity": severity,
+        "safety_deduction": deduction,
         "timestamp": datetime.datetime.utcnow()
-    }
-    await db.alerts.insert_one(metadata_entry)
+    })
 
-    # One-time alert logic per user/session
-    if severity == "High":
-        user = await db.users.find_one({"user_id": request.user_id})
-        if user and not user.get("alert_already_sent", False):
-            contact = user.get("trusted_contact")
-            if contact:
-                # Trigger actual alert (Email/SMS)
-                success = await send_alert_to_contact(contact, severity, "High-risk behavior detected.")
-                if success:
-                    # Update flag instantly to prevent duplicate alerts
-                    await db.users.update_one(
-                        {"user_id": request.user_id}, 
-                        {"$set": {"alert_already_sent": True}}
-                    )
+@router.get("/parent/dashboard/{parent_id}")
+async def get_parent_dashboard(parent_id: str, db = Depends(get_database)):
+    # Find student linked to this parent
+    student = await db.users.find_one({"parent_id": parent_id, "role": "student"})
+    if not student:
+        raise HTTPException(status_code=404, detail="No linked student found")
+    
+    # Get only High and Medium alerts for history (Hide Low)
+    alerts = await db.alerts.find({
+        "user_id": student["user_id"],
+        "severity": {"$in": ["High", "Medium"]}
+    }).sort("timestamp", -1).to_list(length=20)
+    
+    # Format BSON for JSON
+    for alert in alerts:
+        alert["_id"] = str(alert["_id"])
+    
+    return {
+        "student_id": student["user_id"],
+        "safety_percentage": student.get("safety_percentage", 100),
+        "app_blocked": student.get("app_blocked", False),
+        "alerts": alerts
+    }
+
+@router.post("/parent/unlock-student")
+async def unlock_student(student_id: str, db = Depends(get_database)):
+    # Reset safety and unblock
+    result = await db.users.update_one(
+        {"user_id": student_id, "role": "student"},
+        {"$set": {"safety_percentage": 100, "app_blocked": False}}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Student not found or already unlocked")
+        
+    return {"status": "success", "message": "App unlocked and safety reset to 100%"}
